@@ -1,0 +1,614 @@
+---
+title: "Statistics B8IT103 Continuous Assignment"
+author: "Azmir Fakkri 10383721"
+date: "10/11/2017"
+output: 
+  word_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+```{r load.the.data}
+# library for Boston data
+library(MASS)
+data(Boston)
+boston <- Boston
+
+# library used for analysis and plotting
+library(dplyr)
+library(ggplot2)
+library(broom)
+library(knitr)
+library(ggcorrplot)
+```
+
+
+# (A) Descriptive Statistics
+
+```{r desc.stats}
+# data tidying using tidyr::gather()
+boston_long <- boston %>% tidyr::gather(key = variable_name, value = ind_val)
+
+# creating summary table for Boston dataset
+summary_table <- boston_long %>% group_by (variable_name) %>%
+  summarise (type = "numeric",
+             count_unique = length(unique(ind_val)),
+             count_blank = sum(is.na(ind_val)),
+             count_zero = sum(ind_val == 0),
+             median = median(ind_val),
+             mean = mean(ind_val),
+             std.dev = sd(ind_val))
+
+# printing summary table
+knitr::kable(summary_table)
+```
+
+
+# (B) Linear Regressions
+
+## age
+
+Age refers to the proportion of owner-occupied units built prior to 1940.
+
+The plot shows the relationship between crime and age.
+
+```{r}
+# selecting related data
+age_data <- boston %>% select(crim, age)
+
+# plotting 
+age_plot <- ggplot(age_data, aes(x = age, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Age",
+       subtitle = "There is linear relationship",
+       x = "AGE",
+       y = "Log(Crime)") +
+  theme_minimal()
+
+age_plot
+```
+
+There is a linear relationship. 
+
+```{r}
+# fitting linear model
+age_model <- lm(log10(crim) ~ age, data = age_data)
+
+# tidying up lm model structure using library(broom)
+age_model_stats <- broom::glance(age_model)
+age_model_coef <- broom::tidy(age_model)
+age_model_data <- broom::augment(age_model)
+```
+
+### Age Model Statistics & Coefficients
+
+```{r}
+knitr::kable(age_model_stats)
+```
+
+The age model accounts for approximately 43% of the variance seen in log10(crime). It is statistically significant with a p-value less than 0.05.
+
+```{r}
+knitr::kable(age_model_coef)
+```
+
+It is estimated that an increase in one unit of age (year) increases the log10 of crime rate by 0.02.
+
+### Age Residual Plot
+```{r}
+age_resid_plot <- ggplot(age_model_data, aes(x = .fitted, y = .resid)) +
+  
+  geom_point() +
+  labs(title = "Fitted vs. Residuals",
+       subtitle = "Not a good fit",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+
+age_resid_plot
+```
+
+The residual plot does not display an even distribution around the 0 for the fitted values. There may be some underlying influence on the plot on the variable log10(crime).
+
+## black
+
+Black refers to 1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town.
+
+The plot shows the relationship between crime and black.
+
+```{r}
+black_data <- boston %>% select(crim, black)
+
+black_plot <- ggplot(black_data, aes(x = black, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Black",
+       subtitle = "Not a linear relationship",
+       x = "BLACK",
+       y = "Log(Crime)") +
+  theme_minimal()
+
+black_plot
+```
+
+The relationship is not linear. It does not look good for regression model.
+
+## chas
+
+Chas refers to Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).
+
+The plot shows the relationship between crime and chas.
+
+```{r}
+chas_data <- boston %>% select(crim, chas)
+
+chas_plot <- ggplot(chas_data, aes(x = as.factor(chas), y = crim)) +
+  
+  geom_boxplot() +
+  labs(title = "Crime broken by chas",
+       subtitle = "0 = otherwise, 1 = tract bounds river",
+       x = "CHAS",
+       y = "Crime") +
+  theme_minimal()
+
+chas_plot
+```
+
+From the boxplot, chas = 0 has way more crime.
+
+The null and alternative hypotheses are:
+
+H0: u1 = u2
+
+H1: Not all means are equal
+
+```{r}
+# ANOVA 
+chas_anova <- aov(crim ~ chas, data = chas_data)
+summary(chas_anova)
+```
+
+The results showed F(1, 504) = 1.579, p>.05. We cannot reject the null hypothesis and chas is not statistically significant in determining the crime rate. 
+
+## dis
+
+Dis refers to weighted mean of distances to five Boston employment centres.
+
+The plot shows the relationship between crime and dis.
+
+```{r}
+dis_data <- boston %>% select(crim, dis)
+
+dis_plot <- ggplot(dis_data, aes(x = dis, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Distance",
+       subtitle = "There is linear relationship",
+       x = "DISTANCE",
+       y = "Log(Crime)") +
+  theme_minimal()
+
+dis_plot
+```
+
+There is a linear relationship.
+
+```{r}
+dis_model <- lm(log10(crim) ~ dis, data = dis_data)
+
+dis_model_stats <- broom::glance(dis_model)
+dis_model_coef <- broom::tidy(dis_model)
+dis_model_data <- broom::augment(dis_model)
+```
+
+### Distance Model Statistics & Coefficient
+```{r}
+knitr::kable(dis_model_stats)
+```
+
+The distance model accounts for approximately 46% of variance seen in log10(crime). It is statistically significant with p-value less than 0.05.
+
+```{r}
+knitr::kable(dis_model_coef)
+```
+
+It is estimated that an increase of one unit of distance decreases the log10 of crime rate by 0.30.
+
+### Distance Residual Plot
+```{r}
+dis_resid_plot <- ggplot(dis_model_data, aes(x = .fitted, y = .resid)) +
+  
+  geom_point() +
+  labs(title = "Fitted vs. Residuals",
+       subtitle = "Not a good fit",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+
+dis_resid_plot
+```
+
+The residual plot does not display an even distribution around the 0 for the fitted values. There may be some underlying influence on the plot on the variable log10(crime).
+
+## indus
+
+The plot shows the relationship between crime and the proportion of non-retail business acres per town.
+
+```{r}
+indus_data <- boston %>% select(crim, indus)
+
+indus_plot <- ggplot(indus_data, aes(x = indus, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Indus",
+       subtitle = "Not a linear relationship",
+       x = "INDUS",
+       y = "Log(Crime)") +
+  theme_minimal()
+
+indus_plot
+```
+
+The relationship is not linear. It does not look good for regression model.
+
+## lstat
+
+Lstat refers to the lower status of the population (percent).
+
+The plot shows the relationship between crime and lstat.
+
+```{r}
+lstat_data <- boston %>% select(crim, lstat)
+
+lstat_plot <- ggplot(lstat_data, aes(x = lstat, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Lstat",
+       subtitle = "There is linear relationship",
+       x = "LSTAT",
+       y = "Log(Crime)") +
+  theme_minimal()
+
+lstat_plot
+```
+
+There is a linear relationship.
+
+```{r}
+lstat_model <- lm(log10(crim) ~ lstat, data = lstat_data)
+
+lstat_model_stats <- broom::glance(lstat_model)
+lstat_model_coef <- broom::tidy(lstat_model)
+lstat_model_data <- broom::augment(lstat_model)
+```
+
+### Lstat Model Statistics & Coefficient
+```{r}
+knitr::kable(lstat_model_stats)
+```
+
+The lstat model accounts for approximately 39% of variance seen in log10(crime). It is statistically significant with p-value less than 0.05.
+
+```{r}
+knitr::kable(lstat_model_coef)
+```
+
+It is estimated that an increase of one unit of lstat increases the log10 of crime rate by 0.08.
+
+### Lstat Residual Plot
+```{r}
+lstat_resid_plot <- ggplot(lstat_model_data, aes(x = .fitted, y = .resid)) +
+  
+  geom_point() +
+  labs(title = "Fitted vs. Residuals",
+       subtitle = "Not a good fit",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+
+lstat_resid_plot
+```
+
+The residual plot does not display an even distribution around the 0 for the fitted values. There may be some underlying influence on the plot on the variable log10(crime). 
+
+## medv
+
+Medv refers to the median value of owner-occupied homes (in \$1000s).
+
+The plot shows the relationship between crime and medv.
+
+```{r}
+medv_data <- boston %>% select(crim, medv)
+
+medv_plot <- ggplot(medv_data, aes(x = medv, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Medv",
+       subtitle = "There is linear relationship",
+       x = "MEDV",
+       y = "Log(Crime)") +
+  theme_minimal()
+
+medv_plot
+```
+
+There is a linear relationship.
+
+```{r}
+medv_model <- lm(log10(crim) ~ medv, data = medv_data)
+
+medv_model_stats <- broom::glance(medv_model)
+medv_model_coef <- broom::tidy(medv_model)
+medv_model_data <- broom::augment(medv_model)
+```
+
+### Medv Model Statistics & Coefficient
+```{r}
+knitr::kable(medv_model_stats)
+```
+
+The medv model accounts for approximately 20% of variance seen in log(crime). It is statistically significant with p-value less than 0.05.
+
+```{r}
+knitr::kable(medv_model_coef)
+```
+
+It is estimated that an increase of one unit of medv decreases the log10 of crime rate by 0.04.
+
+### Medv Residual Plot
+```{r}
+medv_resid_plot <- ggplot(medv_model_data, aes(x = .fitted, y = .resid)) +
+  
+  geom_point() +
+  labs(title = "Fitted vs. Residuals",
+       subtitle = "Not a good fit",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+
+medv_resid_plot
+```
+
+The residual plot does not display an even distribution around the 0 for the fitted values. There may be some underlying influence on the plot on the variable log10(crime).
+
+## nox 
+
+Nox refers to the nitrogen oxides concentration (parts per 10 million).
+
+The plot shows the relationship between crime and nox.
+
+```{r}
+nox_data <- boston %>% select(crim, nox)
+
+nox_plot <- ggplot(nox_data, aes(x = nox, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Nox",
+       subtitle = "There is linear relationship",
+       x = "NOX",
+       y = "Log(Crime)") +
+  theme_minimal()
+
+nox_plot
+```
+
+There is a linear relationship.
+
+```{r}
+nox_model <- lm(log(crim) ~ nox, data = nox_data)
+
+nox_model_stats <- broom::glance(nox_model)
+nox_model_coef <- broom::tidy(nox_model)
+nox_model_data <- broom::augment(nox_model)
+```
+
+### Nox Model Statistics & Coefficient
+```{r}
+knitr::kable(nox_model_stats)
+```
+
+The nox model accounts for approximately 62% of variance seen in log10(crime). It is statistically significant with p-value less than 0.05.
+
+```{r}
+knitr::kable(nox_model_coef)
+```
+
+It is estimated that an increase of one unit of nox increases the log10 of crime rate by 14.7.
+
+### Nox Residual Plot
+```{r}
+nox_resid_plot <- ggplot(nox_model_data, aes(x = .fitted, y = .resid)) +
+  
+  geom_point() +
+  labs(title = "Fitted vs. Residuals",
+       subtitle = "Not a good fit",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+
+nox_resid_plot
+```
+
+The residual plot does not display an even distribution around the 0 for the fitted values. There may be some underlying influence on the plot on the variable log10(crime).
+
+## ptratio 
+
+Ptratio refers to the pupil-teacher ratio by town.
+
+The plot shows the relationship between crime and ptratio.
+
+```{r}
+ptratio_data <- boston %>% select(crim, ptratio)
+
+ptratio_plot <- ggplot(ptratio_data, aes(x = ptratio, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Ptratio",
+       subtitle = "Not a linear relationship",
+       x = "PTRATIO",
+       y = "Log(Crime)") +
+  theme_minimal()
+
+ptratio_plot
+```
+
+The relationship is not linear. It does not look good for regression model.
+
+## rad 
+
+Rad refers to index of accessibility to radial highways.
+
+The bar chart shows the relationship between crime and rad.
+
+```{r}
+rad_data <- boston %>% select(crim, rad)
+
+rad_plot <- ggplot(rad_data, aes(x = rad)) +
+  
+  geom_bar() +
+  labs(title = "Bar Chart of Rad",
+       x = "RAD",
+       y = "Frequency") +
+  theme_minimal()
+
+rad_plot
+```
+
+It can be seen that accessibility index of 24 has the highest frequency. 
+
+```{r}
+rad_plot2 <- rad_data %>%
+  group_by(rad) %>%
+  summarise(avg.crim = mean(log10(crim))) %>%
+  ggplot(aes(x= rad, y = avg.crim)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average value of crim by rad",
+       x = "RAD",
+       y = "Average Crim")
+
+rad_plot2
+```
+
+Rad is a discrete independent variable so a linear regression model may not be suitable.
+
+## rm 
+
+Rm refers to average number of rooms per dwelling.
+
+The plot shows the relationship between crime and rm.
+
+```{r}
+rm_data <- boston %>% select(crim, rm)
+
+rm_plot <- ggplot(rm_data, aes(x = rm, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Rm",
+       subtitle = "Not a linear relationship",
+       x = "RM",
+       y = "Crime") +
+  theme_minimal()
+
+rm_plot
+```
+
+The relationship is not linear. It does not look good for regression model.
+
+## tax 
+
+Tax refers to full-value property-tax rate per \$10,000.
+
+The plot shows the relationship between crime and tax.
+
+```{r}
+tax_data <- boston %>% select(crim, tax)
+
+tax_plot <- ggplot(tax_data, aes(x = tax, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Tax",
+       subtitle = "Not a linear relationship",
+       x = "TAX",
+       y = "Crime") +
+  theme_minimal()
+
+tax_plot
+```
+
+The relationship is not linear. It does not look good for regression model.
+
+## zn 
+
+Zn refers to proportion of residential land zoned for lots over 25,000 sq.ft.
+
+The plot shows the relationship between crime and zn.
+
+```{r}
+zn_data <- boston %>% select(crim, zn)
+
+zn_plot <- ggplot(zn_data, aes(x = zn, y = log10(crim))) +
+  
+  geom_point() +
+  labs(title = "Crime related to Zn",
+       subtitle = "Not a linear relationship",
+       x = "ZN",
+       y = "Crime") +
+  theme_minimal()
+
+zn_plot
+```
+
+The relationship is not linear. It does not look good for regression model.
+
+# (C) Multiple Regression
+
+
+```{r}
+multi_model <- lm(log10(crim) ~ age + dis + lstat + medv + nox + chas, data = boston)
+
+multi_model_stats <- broom::glance(multi_model)
+multi_model_coef <- broom::tidy(multi_model)
+multi_model_data <- broom::augment(multi_model)
+```
+
+```{r}
+knitr::kable(multi_model_stats)
+```
+
+The value of r-squared in this multiple regression model, 0.67, is higher than all the single models. The conclusion that I can make from this is that, the multi-variate model is better than a bi-variate model.
+
+```{r}
+knitr::kable(multi_model_coef)
+```
+
+The p-value for age, medv and chas is greater than 0.05, so they are not statistically significant in this multiple regression model. However, the model itself is statistically significant. 
+
+To answer the question, we can reject the null hypothesis for predictors with p-value<0.05 which include dis, lstat and nox.
+
+```{r}
+
+multi_model_resid_plot <- ggplot(multi_model_data, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  labs(title = "Fitted vs. Residuals",
+       subtitle = "Okay fit",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+
+multi_model_resid_plot
+```
+
+# (D) Plot 
+
+These can be apppreciated from the plots I have created previously. 
+
+# (E) Polynomial Regression
+
+From the plots that I have created, there is evidence of non-linear association between the predictors and the response.
+
+With polynomial regression, I will be worried about overfitting a model. This can cause p-values, R-squared and regression coefficients to be false or misleading.
