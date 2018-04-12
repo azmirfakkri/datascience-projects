@@ -1,0 +1,269 @@
+---
+title: "Wine Analysis"
+author: "Azmir Fakkri"
+date: "12/4/2018"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Data Cleaning  
+
+Noisy data needs cleaning. It can be divided into three phases, raw data exploration, data tidying and data preparation for analysis.  
+
+## Raw Data Exploration
+
+```{r}
+#install and load packages
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(rworldmap)
+library(ggpubr)
+
+# Load wine_raw1 data
+wine_raw1 <- read.csv(file = "/Users/azmirfakkri/Documents/OneDrive - Dublin Business School (DBS)/Programming for Big Data/CA/10383721/Dataset 1/winemag-data-130k-v2-1.csv",
+                      header = TRUE, sep = ",")
+
+## Wine vintage year was extracted using the commented code ##
+## Result were manipulated manually in Excel ##
+
+# vintage_list <- str_extract_all(wine_tidy2$title, "\\d{4}", simplify = T)
+
+# Load wine_raw2 (with vintage_year column)
+wine_raw2 <- read.csv(file = "/Users/azmirfakkri/Documents/OneDrive - Dublin Business School (DBS)/Programming for Big Data/CA/10383721/Dataset 1/winemag-data-130k-v2-2.csv",
+                      header = TRUE, sep = ",")
+
+# View wine_raw2 structure
+str(wine_raw2)
+```
+
+The wine_raw1 data is a data frame with 129971 observations (rows) and 14 variables (columns).
+Some wine drinkers are interested in wine’s vintage year. Vintage year is the specified year in which the grapes are grown and harvested. This information can be extracted from the title column by specifying the rules in R using regular expressions. The new dataset is called wine_raw2.
+
+## Data Tidying
+
+```{r}
+# Remove column X, taster_name and taster_twitter_handle
+wine_tidy1 <- wine_raw2[ , c(-1, -10, -11)]
+
+# Re-arrange columns 
+wine_tidy2 <- select(wine_tidy1, country, designation, province, region_1, region_2, 
+                     winery, variety, price, points, title, description, vintage_year)
+```
+
+Of the 15 variables, three variables are removed as they are not important for further analysis. The columns are re-arranged to give us a better view of the data.
+
+## Data Preparation for Analysis
+
+```{r}
+#Remove title column 
+wine_data <- wine_tidy2[ , -10]
+
+# Replace all blanks with NA
+wine_data[wine_data == ""] <- NA
+
+# Convert class of data.frame columns 
+wine_data$description <- as.character(wine_data$description)
+wine_data$points <- as.numeric(wine_data$points)
+wine_data$price <- as.numeric(wine_data$price)
+
+# Summary of the cleaned dataset 
+summary(wine_data)
+```
+
+All blanks are replaced with NA to be counted and a few of the classes in the data frame are converted.
+
+```{r}
+# Summary table
+wine_long <- wine_data %>% gather(key = var_names, value = ind_val)
+
+summary_table <- wine_long %>% group_by (var_names) %>%
+  summarise (count_unique = length(unique(na.omit(ind_val))),
+             count_NA = sum(is.na(ind_val)))
+
+knitr::kable(summary_table)
+```
+
+The dataset contains a lot of missing values. These missing values will be ignored in further analysis but will not be removed from the dataset as analysis results will be inaccurate.
+The data are now cleaned.
+
+# Exploratory Data Analysis
+
+## Top Wine Producers and Global Production
+
+```{r}
+# Top 10 wine producers
+top_wine <- wine_data %>% group_by(country) %>% 
+  drop_na(country) %>%
+  summarise(Total_Review = n()) %>% 
+  arrange(desc(Total_Review))
+
+knitr::kable(top_wine)
+```
+
+US is the top wine producer in this dataset, followed by France and Italy. It should be noted that the data scraped are from a website based in New York, so these results might be biased.
+
+```{r}
+# World map for global production
+map_data <- wine_data %>% group_by(country) %>% 
+  summarise(Total_Review = n()) %>% 
+  arrange(desc(Total_Review))
+
+# Join to a course resolution map
+spmap_data <- joinCountryData2Map(top_wine, joinCode ="NAME",
+                                  nameJoinColumn = "country")
+
+# Visualise map
+mapCountryData(spmap_data, nameColumnToPlot = "Total_Review",
+               catMethod = "fixedWidth",
+               mapTitle = "Wine Origin across the World")
+```
+
+## Price
+
+The most expensive wine cost USD3300 and the cheapest is USD4. Average price for a bottle of wine in this dataset is USD35.36. The price histogram is right-skewed. The histogram shown below is a focused histogram with x-axis limit is set to 100.
+
+```{r}
+# Price distribution
+price_hist <- ggplot(wine_data, aes(x = price, colour = I('black'), fill = I('maroon'))) +
+  geom_histogram(na.rm = TRUE, binwidth = 10) +
+  labs(title = "Price Distribution",
+       x = "Price (in US Dollar)",
+       y = "Frequency")
+
+price_hist + coord_cartesian(xlim = c(0, 100))
+```
+
+The median value of price, USD25, is a more suitable value to be used as the average price of wine as it is less sensitive to an extreme value in the dataset e.g. USD3300.
+
+```{r}
+# Average price by country
+avgprice_bycountry <- wine_data %>%
+  group_by(country) %>%
+  drop_na(price, country) %>%
+  summarise(average_price = mean(price)) %>%
+  arrange(desc(average_price))
+
+knitr::kable(avgprice_bycountry)
+```
+
+Looking at average price by country, Switzerland, England and Germany are the top three countries with highest average price.
+
+## Points
+
+All the wines reviewed in this dataset are wines with points of 80 to 100. Mean for points is 88.45.
+
+```{r}
+# Points distribution
+points_dist <- ggplot(wine_data, aes(x = points)) +
+  geom_density(alpha = 0.6, adjust = 1.8, fill = 'lightgreen') +
+  labs(title = "Points Distribution",
+       x = "Points",
+       y = "Frequency")
+
+points_dist
+```
+
+The distribution of points has an almost normal distribution. The average points by for each country can be seen below.
+
+```{r}
+avgpoints_bycountry <- wine_data %>%
+  group_by(country) %>%
+  drop_na(points, country) %>%
+  summarise(average_points = mean(points)) %>%
+  arrange(desc(average_points))
+
+knitr::kable(avgpoints_bycountry)
+```
+
+England, India and Austria are the top three countries with the highest average points. It should be noted that for an accurate interpretation of these values, the number of wine reviews for the country should be taken into consideration. For example, India has only 9 reviews in this dataset.
+
+# Correlation between Price and Points
+
+```{r}
+# Pearson correlation
+cor.test(wine_data$points, log(wine_data$price), method = "pearson", use = "complete.obs")
+```
+
+There is a strong correlation between the points and log(price).
+
+```{r}
+# Plot correlation: Log(Price) against Points
+ggplot(wine_data, aes(x = points, y = price)) +
+  geom_point(colour = "#CC3300") +
+  scale_y_log10() +
+  geom_smooth() +
+  labs(title = "Log(Price) against Points",
+       x = "Points",
+       y = "Log(Price)")
+```
+
+It can be seen that there is a positive correlation between points and price. It seems that the higher the point, the higher the price. However, correlation does not imply causation.
+
+# Vintage Year
+
+```{r}
+# Vintage Year Bar Chart
+wine_data %>% drop_na(vintage_year) %>%
+ggplot(aes(x = factor(vintage_year), fill = "#D55E00")) +
+  geom_bar() +
+  labs(title = "Vintage Year",
+       x = "Vintage Year",
+       y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_fill_discrete(guide = FALSE)
+```
+
+In terms of vintage year, 2013 has the most number of wines reviewed, followed by 2012 and 2014. Wines with older vintage year are mostly port.
+Two graphs are plotted to see how price and points are doing with respect to vintage year.
+
+```{r}
+# Plot: Points against Vintage Year
+ggplot(wine_data, aes(x = vintage_year, y = points)) +
+  geom_point(colour = "#D55E00") +
+  labs(title = "Points against Vintage Year",
+       x = "Vintage Year",
+       y = "Points")
+```
+
+```{r}
+# Plot: Price against Vintage Year
+ggplot(wine_data, aes(x = vintage_year, y = price)) +
+  geom_point(colour = "red") +
+  labs(title = "Price against Vintage Year",
+       x = "Vintage Year",
+       y = "Price")
+```
+
+# Best Economic Wines
+
+Best economic wines range from US$10 to US$20, with points of 90 and above.
+
+```{r}
+# Range 10-20, >90
+goodwine <- wine_data %>%
+  select(country, points, price, province, variety) %>%
+  filter(price >= 10 & price <= 20, points >= 90) %>%
+  group_by(points) %>%
+  drop_na(price, country) %>%
+  arrange(desc(points)) %>%
+  arrange(desc(price))
+
+top_goodwine <- goodwine %>%
+  group_by(country, variety) %>%
+  summarise(Total_Review = n()) %>%
+  arrange(desc(Total_Review))
+
+top_goodwine
+```
+
+Wine of Portuguese Red variety from Portugal topped the chart when it comes to best economic wines, followed by US Riesling and Sauvignon Blanc.
+
+# Conclusion
+
+From the results of the analysis, it is clear that simple exploratory data analysis can reveal a lot about the dataset. Data cleaning and exploratory data analysis are two important steps that need to be performed before a more complex analysis are carried out.
+Knowing the average points and price along with data slicing provided us with valuable information regarding economic wine. In summary, exploratory data analysis provides some information and insights from this wine dataset.
