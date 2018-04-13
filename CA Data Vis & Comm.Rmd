@@ -2,13 +2,7 @@
 title: "Data Visualisation & Communications"
 author: "Azmir Fakkri 10383721"
 date: "9/3/2018"
-output: 
-  html_document:
-    fig_caption: yes
-    highlight: textmate
-    theme: sandstone
-    toc: yes
-    toc_depth: 2
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
