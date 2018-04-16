@@ -1,8 +1,8 @@
 ---
 title: "Data Visualisation & Communications"
-author: "Azmir Fakkri 10383721"
+author: "Azmir Fakkri"
 date: "9/3/2018"
-output: github_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
