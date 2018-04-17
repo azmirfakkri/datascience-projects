@@ -2,7 +2,7 @@
 title: "Data Visualisation & Communications"
 author: "Azmir Fakkri"
 date: "9/3/2018"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}

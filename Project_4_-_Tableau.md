@@ -1,6 +1,6 @@
 Data Visualisation & Communications
 ================
-Azmir Fakkri 10383721
+Azmir Fakkri
 9/3/2018
 
 Exercise 1: Tree Map
@@ -11,14 +11,7 @@ Journalism Scenario
 
 You are a reporter for a metro daily news organization and you cover local politics. You have just downloaded data showing how much each local governmental agency in the state has paid for lobbyists to go to the state capitol and work for their causes. You think there’s a story here, but you’re not sure what it is.
 
-<noscript>
-<a href='#'><img alt='Dashboard 1 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Ex&#47;Exercise1-LobbyingSpending&#47;Dashboard1&#47;1_rss.png' style='border: none' /></a>
-</noscript>
-<object class="tableauViz" style="display:none;">
-<param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='Exercise1-LobbyingSpending&#47;Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Ex&#47;Exercise1-LobbyingSpending&#47;Dashboard1&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' />
-</object>
-
-                <script type='text/javascript'>                    var divElement = document.getElementById('viz1523910957477');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='1000px';vizElement.style.height='827px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
+\[iframe src="<https://public.tableau.com/views/Exercise1-LobbyingSpending/Dashboard1>?:showVizHome=no&:embed=true" align = "center" width = "1000" height = "800"\]
 
 There is a few key findings in this report:
 
