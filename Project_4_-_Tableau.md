@@ -11,7 +11,7 @@ Journalism Scenario
 
 You are a reporter for a metro daily news organization and you cover local politics. You have just downloaded data showing how much each local governmental agency in the state has paid for lobbyists to go to the state capitol and work for their causes. You think there’s a story here, but you’re not sure what it is.
 
-\[iframe src="<https://public.tableau.com/views/Exercise1-LobbyingSpending/Dashboard1>?:showVizHome=no&:embed=true" align = "center" width = "1000" height = "800"\]
+\[iframe src="<https://public.tableau.com/views/Exercise1-LobbyingSpending/Dashboard1>?:embed=y&:display\_count=yes" align = "center" width = "1000" height = "800"\]
 
 There is a few key findings in this report:
 
